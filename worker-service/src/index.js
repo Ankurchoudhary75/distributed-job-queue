@@ -1,41 +1,52 @@
-console.log("worker index.js loaded");
-
 const amqp = require("amqplib");
 require("dotenv").config();
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost:5672";
-const QUEUE_NAME = "jobs";
+const JOB_QUEUE = "jobs";
+const RETRY_QUEUE = "jobs_retry";
+const DLQ_QUEUE = "jobs_dlq";
+const MAX_RETRIES = 3;
 
 async function startWorker() {
-  console.log("Starting worker...");
+  console.log("Starting worker with retry support...");
 
   const connection = await amqp.connect(RABBITMQ_URL);
   const channel = await connection.createChannel();
 
-  await channel.assertQueue(QUEUE_NAME, { durable: true });
+  channel.consume(JOB_QUEUE, async (msg) => {
+    if (!msg) return;
 
-  console.log("Worker connected. Waiting for jobs...");
+    const job = JSON.parse(msg.content.toString());
+    job.retryCount = job.retryCount || 0;
 
-  channel.consume(
-    QUEUE_NAME,
-    (msg) => {
-      if (!msg) return;
+    try {
+      console.log("Processing job:", job.id);
 
-      const job = JSON.parse(msg.content.toString());
-      console.log("Job received by worker:", job);
+      if (job.retryCount < 2) {
+        throw new Error("Simulated failure");
+      }
 
-      setTimeout(() => {
-        console.log(`Job ${job.id} processed`);
-        channel.ack(msg);
-      }, 1000);
-    },
-    { noAck: false }
-  );
+      console.log(`Job ${job.id} processed successfully`);
+      channel.ack(msg);
+
+    } catch (err) {
+      job.retryCount += 1;
+
+      if (job.retryCount <= MAX_RETRIES) {
+        console.log(`Retrying job ${job.id}`);
+        channel.sendToQueue(RETRY_QUEUE, Buffer.from(JSON.stringify(job)), {
+          persistent: true,
+        });
+      } else {
+        console.log(`Job ${job.id} moved to DLQ`);
+        channel.sendToQueue(DLQ_QUEUE, Buffer.from(JSON.stringify(job)), {
+          persistent: true,
+        });
+      }
+
+      channel.ack(msg);
+    }
+  });
 }
 
-startWorker()
-  .then(() => console.log("startWorker() running"))
-  .catch((err) => {
-    console.error("Worker failed to start", err);
-    process.exit(1);
-  });
+startWorker().catch(console.error);

@@ -1,9 +1,9 @@
 const express = require("express");
 require("dotenv").config();
 
-console.log("index.js loaded");
+//console.log("index.js loaded");
 
-const { connectQueue, publishToQueue } = require("./rabbitmq");
+const { connectQueue, publishToQueue, JOB_QUEUE, } = require("./rabbitmq");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
@@ -11,7 +11,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-console.log("Trying to connect to RabbitMQ...");
+//console.log("Trying to connect to RabbitMQ...");
 
 connectQueue()
   .then(() => {
@@ -40,7 +40,8 @@ app.post("/jobs", (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  publishToQueue(job);
+publishToQueue(JOB_QUEUE, job);
+
 
   res.status(202).json({
     message: "Job queued successfully",
