@@ -89,6 +89,7 @@ Fair dispatch using prefetch(1)
 
 Horizontal scaling without code changes
 
+
 🛠 Tech Stack
 
 Node.js (Job Producer & Worker)
@@ -130,7 +131,7 @@ distributed-job-queue/
 ⚙️ Setup & Run
 
 1. Start RabbitMQ
-2. 
+
 docker compose up -d
 
 RabbitMQ dashboard:
