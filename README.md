@@ -16,20 +16,35 @@ Supporting multiple workers (horizontal scaling)
 This architecture is commonly used in payment systems, email services, video processing, and notification pipelines.
 
 🧱 System Architecture
+
 Client
+
   │
+  
   ▼
+
 Job Producer (API)
+
   │
+  
   ▼
+
 RabbitMQ (Message Broker)
+
   ├── jobs        (main queue)
+  
   ├── jobs_retry  (delayed retries)
+  
   └── jobs_dlq    (dead letter queue)
+  
   │
+  
   ▼
+
 Worker Service(s)
+
 ✨ Key Features
+
 1. Job Producer API
 
 REST API built with Express
@@ -84,44 +99,75 @@ Docker & Docker Compose (Infrastructure)
 
 Express.js (REST API)
 
+
 📂 Project Structure
+
 distributed-job-queue/
+
 ├── docker-compose.yml
+
 ├── job-producer/
+
 │   ├── src/
+
 │   │   ├── index.js        # API entry point
+
 │   │   └── rabbitmq.js     # Queue setup & publishing
+
 │   └── .env
+
 ├── worker-service/
+
 │   ├── src/
+
 │   │   └── index.js        # Worker with retry & DLQ logic
+
 │   └── .env
+
 └── README.md
+
+
 ⚙️ Setup & Run
+
 1. Start RabbitMQ
+2. 
 docker compose up -d
 
 RabbitMQ dashboard:
 
 http://localhost:15672
+
 username: guest
+
 password: guest
+
 2. Start Job Producer
+
 cd job-producer
+
 npm install
+
 node src/index.js
+
 3. Start Worker Service
+   
 cd worker-service
+
 npm install
+
 node src/index.js
+
 
 (Optional) Start multiple workers for scaling:
 
 node src/index.js
+
 4. Submit a Job
+
 curl -X POST http://localhost:3000/jobs \
 -H "Content-Type: application/json" \
 -d '{"type":"EMAIL","payload":{"to":"user@test.com"}}'
+
 🔁 Retry & Dead Letter Logic
 
 Failed jobs are retried automatically
@@ -144,21 +190,7 @@ Queue immutability and topology ownership
 
 Graceful shutdown and fault tolerance
 
-📌 Resume Highlight
 
-Built a production-grade distributed job processing system using RabbitMQ, featuring durable queues, TTL-based retries, Dead Letter Queues (DLQ), idempotent workers, horizontal scaling, and graceful shutdown.
-
-📈 Future Improvements
-
-Redis-based idempotency store
-
-Metrics & monitoring (Prometheus-style)
-
-Dockerized producer & worker services
-
-Authentication & rate limiting
-
-Persistent job storage
 
 👨‍💻 Author
 
